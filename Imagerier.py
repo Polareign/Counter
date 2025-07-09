@@ -56,20 +56,20 @@ def count_nuclei_with_fiji(image_path, macro_path, fiji_path):
     cmd = [
         fiji_path,
         "--headless",
-        "--run", macro_path,
-        f'input="{image_path}"'
+        "-macro", macro_path, image_path
     ]
+    print("[INFO] Running command:", " ".join(cmd))
     try:
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
         output = result.stdout + result.stderr
         print("[INFO] Fiji output received.")
+        print(output)
         for line in output.splitlines():
             if "Count:" in line:
                 count = int(line.split("Count:")[1].strip())
                 print(f"[INFO] Nuclei count for {os.path.basename(image_path)}: {count}")
                 return count
         print("[ERROR] Nuclei count not found in Fiji output.")
-        print(output)
         messagebox.showerror("Error", f"Nuclei count not found in Fiji output for {os.path.basename(image_path)}.\n\nOutput:\n{output}")
         return None
     except Exception as e:

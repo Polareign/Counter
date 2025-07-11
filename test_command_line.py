@@ -1,71 +1,56 @@
-#!/usr/bin/env python3
-"""
-Test script to verify the command-line functionality works without GUI dependencies
-"""
+import subprocess
 import sys
 import os
 
-# Mock the GUI dependencies for testing
-class MockTk:
-    def withdraw(self): pass
+def test_fiji_headless():
+    """Test Fiji headless execution with minimal macro."""
+    
+    # Hardcode your paths for testing
+    fiji_path = r"C:\Users\Griffin Taylor\Downloads\Fiji.app\ImageJ-win64.exe"
+    macro_path = r"C:\Users\Griffin Taylor\Downloads\test_macro.ijm"
+    image_path = r"C:\Users\Griffin Taylor\Downloads\LCR10-Chip6-Location1BottomEndoRED.JPG"
+    
+    # Check if files exist
+    print(f"[TEST] Checking files...")
+    print(f"[TEST] Fiji exists: {os.path.exists(fiji_path)}")
+    print(f"[TEST] Macro exists: {os.path.exists(macro_path)}")
+    print(f"[TEST] Image exists: {os.path.exists(image_path)}")
+    
+    if not all([os.path.exists(fiji_path), os.path.exists(macro_path), os.path.exists(image_path)]):
+        print("[ERROR] Some files don't exist!")
+        return
+    
+    # Try the simplest command
+    cmd = [fiji_path, "--headless", "-macro", macro_path, image_path]
+    print(f"[TEST] Running command: {' '.join(cmd)}")
+    
+    try:
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=30
+        )
+        
+        print(f"[TEST] Return code: {result.returncode}")
+        print(f"[TEST] STDOUT:")
+        print(result.stdout)
+        print(f"[TEST] STDERR:")
+        print(result.stderr)
+        
+        # Look for count
+        all_output = result.stdout + result.stderr
+        for line in all_output.splitlines():
+            if "Count:" in line:
+                print(f"[SUCCESS] Found count line: {line}")
+                return
+        
+        print("[WARNING] No count found in output")
+        
+    except subprocess.TimeoutExpired:
+        print("[ERROR] Command timed out after 30 seconds")
+    except Exception as e:
+        print(f"[ERROR] Command failed: {e}")
 
-class MockMessageBox:
-    @staticmethod
-    def showinfo(*args): pass
-    @staticmethod
-    def showerror(*args): pass
-    @staticmethod
-    def showwarning(*args): pass
-
-class MockFileDialog:
-    @staticmethod
-    def askopenfilename(*args, **kwargs): return ""
-    @staticmethod
-    def askopenfilenames(*args, **kwargs): return []
-
-# Test imports and basic functionality
-try:
-    # Set up mock modules
-    import types
-    tk_module = types.ModuleType('tkinter')
-    tk_module.Tk = MockTk
-    sys.modules['tkinter'] = tk_module
-    
-    messagebox_module = types.ModuleType('tkinter.messagebox')
-    messagebox_module.showinfo = MockMessageBox.showinfo
-    messagebox_module.showerror = MockMessageBox.showerror
-    messagebox_module.showwarning = MockMessageBox.showwarning
-    sys.modules['tkinter.messagebox'] = messagebox_module
-    
-    filedialog_module = types.ModuleType('tkinter.filedialog')
-    filedialog_module.askopenfilename = MockFileDialog.askopenfilename
-    filedialog_module.askopenfilenames = MockFileDialog.askopenfilenames
-    sys.modules['tkinter.filedialog'] = filedialog_module
-    
-    ttk_module = types.ModuleType('tkinter.ttk')
-    sys.modules['tkinter.ttk'] = ttk_module
-    
-    # Now try to import our module
-    import Imagerier
-    print("✓ Imagerier module imported successfully")
-    
-    # Test history functions
-    test_filename = "test_image.jpg"
-    test_count = 42
-    Imagerier.save_to_history(test_filename, test_count)
-    print("✓ History save function works")
-    
-    history = Imagerier.get_history()
-    print(f"✓ History load function works, found {len(history)} entries")
-    
-    if history and history[-1]["filename"] == test_filename and history[-1]["count"] == test_count:
-        print("✓ History data is correct")
-    else:
-        print("✗ History data mismatch")
-    
-    print("\nAll basic functions are working correctly!")
-    
-except Exception as e:
-    print(f"✗ Error: {e}")
-    import traceback
-    traceback.print_exc()
+if __name__ == "__main__":
+    test_fiji_headless()

@@ -1,3 +1,4 @@
+# want to be able to delete old counts, take out process entire folder, dont close the drawing of the image and change macro, improve gui 
 import subprocess
 import sys
 import tkinter as tk

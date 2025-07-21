@@ -7,6 +7,6 @@ run("Convert to Mask");
 run("Invert");
 // If nuclei are clumped, try uncommenting the next line:
 run("Watershed");
-run("Analyze Particles...", "size=500-25000 circularity=0.3-1.00 show=Outlines display clear summarize");
+run("Analyze Particles...", "size=450-25000 circularity=0.3-1.00 show=Outlines display clear summarize");
 count = nResults;
 print("Count: " + count);

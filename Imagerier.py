@@ -79,24 +79,16 @@ def get_processing_settings():
             with open(CONFIG_FILE, "r") as f:
                 config = json.load(f)
             return config.get("processing_settings", {
-                "particle_size_min": 600,
-                "particle_size_max": 5000,
-                "circularity_min": 0.00,
-                "circularity_max": 1.00,
-                "median_radius": 3,
-                "threshold_method": "Otsu"
+                "use_watershed": True,
+                "disable_macro": False
             })
         except:
             pass
     
     # Return defaults
     return {
-        "particle_size_min": 600,
-        "particle_size_max": 5000,
-        "circularity_min": 0.00,
-        "circularity_max": 1.00,
-        "median_radius": 3,
-        "threshold_method": "Otsu"
+        "use_watershed": True,
+        "disable_macro": False
     }
 
 def save_processing_settings(settings):
@@ -120,139 +112,148 @@ def save_processing_settings(settings):
         print(f"[ERROR] Failed to save processing settings: {e}")
         return False
 
-def open_processing_settings():
-    """Open processing settings dialog."""
-    settings = get_processing_settings()
-    
-    # Create settings window
-    settings_window = tk.Toplevel()
-    settings_window.title("⚙️ Processing Settings")
-    settings_window.geometry("500x600")
-    settings_window.minsize(450, 550)
-    settings_window.grab_set()  # Make modal
+def open_protocol_help():
+    """Open protocol/help window with step-by-step instructions."""
+    protocol_window = tk.Toplevel()
+    protocol_window.title("📋 Nuclei Counter Protocol")
+    protocol_window.geometry("800x700")
+    protocol_window.minsize(700, 600)
+    protocol_window.grab_set()  # Make modal
     
     # Center the window
-    settings_window.transient()
+    protocol_window.transient()
     
-    # Main frame
-    main_frame = ttk.Frame(settings_window, padding="20")
-    main_frame.pack(fill=tk.BOTH, expand=True)
+    # Main frame with scrollbar
+    main_frame = ttk.Frame(protocol_window)
+    main_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
+    
+    # Canvas for scrolling
+    canvas = tk.Canvas(main_frame, bg='white')
+    scrollbar = ttk.Scrollbar(main_frame, orient="vertical", command=canvas.yview)
+    scrollable_frame = ttk.Frame(canvas)
+    
+    scrollable_frame.bind(
+        "<Configure>",
+        lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+    )
+    
+    canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+    canvas.configure(yscrollcommand=scrollbar.set)
     
     # Title
-    title_label = ttk.Label(main_frame, text="⚙️ Processing Settings", font=("Arial", 14, "bold"))
+    title_label = ttk.Label(scrollable_frame, text="📋 Nuclei Counter Protocol", font=("Arial", 16, "bold"))
     title_label.pack(pady=(0, 20))
     
-    # Particle Size Settings
-    size_frame = ttk.LabelFrame(main_frame, text="Particle Size (pixels)", padding="10")
-    size_frame.pack(fill=tk.X, pady=(0, 15))
+    # Protocol content
+    protocol_text = """
+🔬 NUCLEI COUNTER - PROTOCOL
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. FIRST TIME SETUP
+   • When you first run the program, it will ask you to select:
+     - ImageJ executable (usually ImageJ-win64.exe)
+     - Macro file (optional - Cancel to use built-in processing)
+   • These settings are saved and can be changed later
+
+2. PREPARE YOUR IMAGES
+   • Supported formats: .jpg, .jpeg
+   • Images should show nuclei clearly
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎛️ PROCESSING OPTIONS
+
+KEEP IMAGES OPEN
+   ✅ Checked: ImageJ stays open with processed images for inspection
+   ❌ Unchecked: ImageJ closes automatically after processing (faster)
+
+WATERSHED SEGMENTATION
+   ✅ Enabled: Separates touching nuclei (recommended)
+   ❌ Disabled: Used when nuclei are not bunched together
+
+MACRO PROCESSING
+   ✅ Enabled: Uses your custom macro file (if selected)
+   ❌ Disabled: Forces built-in processing (overrides custom macro)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📁 PROCESSING WORKFLOW
+
+1. CLICK "SELECT IMAGES AND COUNT NUCLEI"
+   • File dialog opens - select one or more images
+   • Ctrl+click to select multiple files
+   • All selected images will be processed in one batch
+
+2. AUTOMATIC PROCESSING
+   • ImageJ opens and processes each image
+   • Built-in processing steps:
+     - Convert to 8-bit
+     - Apply median filter (noise reduction)
+     - Auto threshold (Otsu method)
+     - Convert to binary mask
+     - Invert colors
+     - Watershed segmentation (if enabled)
+     - Analyze particles (size: 450-25000 pixels)
+
+3. RESULTS
+   • Counts appear in the history table
+   • Results are automatically saved
+   • ImageJ may stay open for inspection (if option is checked)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔧 TROUBLESHOOTING
+
+IMAGEJ NOT OPENING
+   • Check that ImageJ path is correct
+   • Make sure ImageJ is properly installed
+   • Try running ImageJ manually first
+
+LOW/HIGH COUNTS
+   • Check image quality and contrast
+   • Ensure nuclei are clearly visible
+   • Consider adjusting image brightness/contrast before processing
+   • Watershed may help separate touching nuclei
+
+ERROR MESSAGES
+   • Check console output for detailed error information
+   • Ensure image files are not corrupted
+   • Make sure ImageJ has sufficient memory for large images
+
+CUSTOM MACRO ISSUES
+   • Test your macro in ImageJ manually first
+   • Ensure macro doesn't contain interactive dialogs
+   • Remove any "open()" or "print()" statements
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Version: Nuclei Counter v3.11
+Built-in processing: 8-bit → Median filter → Otsu threshold → Mask → Watershed → Particle analysis (450-25000 pixels)
+"""
+
+    # Create text widget with proper formatting
+    text_widget = tk.Text(scrollable_frame, wrap=tk.WORD, font=("Consolas", 10), 
+                         bg='white', fg='black', padx=20, pady=20)
+    text_widget.insert(tk.END, protocol_text)
+    text_widget.configure(state=tk.DISABLED)  # Make read-only
+    text_widget.pack(fill=tk.BOTH, expand=True)
     
-    ttk.Label(size_frame, text="Minimum Size:").grid(row=0, column=0, sticky=tk.W, pady=5)
-    size_min_var = tk.IntVar(value=settings["particle_size_min"])
-    size_min_spin = ttk.Spinbox(size_frame, from_=50, to=10000, textvariable=size_min_var, width=10)
-    size_min_spin.grid(row=0, column=1, sticky=tk.W, padx=(10, 0), pady=5)
+    # Pack canvas and scrollbar
+    canvas.pack(side="left", fill="both", expand=True)
+    scrollbar.pack(side="right", fill="y")
     
-    ttk.Label(size_frame, text="Maximum Size:").grid(row=1, column=0, sticky=tk.W, pady=5)
-    size_max_var = tk.IntVar(value=settings["particle_size_max"])
-    size_max_spin = ttk.Spinbox(size_frame, from_=100, to=50000, textvariable=size_max_var, width=10)
-    size_max_spin.grid(row=1, column=1, sticky=tk.W, padx=(10, 0), pady=5)
+    # Close button
+    close_frame = ttk.Frame(protocol_window)
+    close_frame.pack(fill=tk.X, padx=20, pady=10)
     
-    # Circularity Settings
-    circ_frame = ttk.LabelFrame(main_frame, text="Circularity (0.0 - 1.0)", padding="10")
-    circ_frame.pack(fill=tk.X, pady=(0, 15))
+    ttk.Button(close_frame, text="✅ Close Protocol", 
+              command=protocol_window.destroy).pack(side=tk.RIGHT)
     
-    ttk.Label(circ_frame, text="Minimum Circularity:").grid(row=0, column=0, sticky=tk.W, pady=5)
-    circ_min_var = tk.DoubleVar(value=settings["circularity_min"])
-    circ_min_spin = ttk.Spinbox(circ_frame, from_=0.0, to=1.0, increment=0.01, textvariable=circ_min_var, width=10)
-    circ_min_spin.grid(row=0, column=1, sticky=tk.W, padx=(10, 0), pady=5)
-    
-    ttk.Label(circ_frame, text="Maximum Circularity:").grid(row=1, column=0, sticky=tk.W, pady=5)
-    circ_max_var = tk.DoubleVar(value=settings["circularity_max"])
-    circ_max_spin = ttk.Spinbox(circ_frame, from_=0.0, to=1.0, increment=0.01, textvariable=circ_max_var, width=10)
-    circ_max_spin.grid(row=1, column=1, sticky=tk.W, padx=(10, 0), pady=5)
-    
-    # Preprocessing Settings
-    preproc_frame = ttk.LabelFrame(main_frame, text="Preprocessing", padding="10")
-    preproc_frame.pack(fill=tk.X, pady=(0, 15))
-    
-    ttk.Label(preproc_frame, text="Median Filter Radius:").grid(row=0, column=0, sticky=tk.W, pady=5)
-    median_var = tk.IntVar(value=settings["median_radius"])
-    median_spin = ttk.Spinbox(preproc_frame, from_=1, to=10, textvariable=median_var, width=10)
-    median_spin.grid(row=0, column=1, sticky=tk.W, padx=(10, 0), pady=5)
-    
-    ttk.Label(preproc_frame, text="Threshold Method:").grid(row=1, column=0, sticky=tk.W, pady=5)
-    threshold_var = tk.StringVar(value=settings["threshold_method"])
-    threshold_combo = ttk.Combobox(preproc_frame, textvariable=threshold_var, width=12,
-                                   values=["Otsu", "Triangle", "Huang", "Li", "MaxEntropy", "Mean", "MinError"])
-    threshold_combo.grid(row=1, column=1, sticky=tk.W, padx=(10, 0), pady=5)
-    threshold_combo.state(['readonly'])
-    
-    # Current Settings Preview
-    preview_frame = ttk.LabelFrame(main_frame, text="Current Settings Preview", padding="10")
-    preview_frame.pack(fill=tk.X, pady=(0, 15))
-    
-    preview_text = tk.Text(preview_frame, height=6, width=50, wrap=tk.WORD)
-    preview_text.pack(fill=tk.BOTH, expand=True)
-    
-    def update_preview():
-        preview_text.delete(1.0, tk.END)
-        preview_text.insert(tk.END, f"Particle Size: {size_min_var.get()} - {size_max_var.get()} pixels\n")
-        preview_text.insert(tk.END, f"Circularity: {circ_min_var.get():.2f} - {circ_max_var.get():.2f}\n")
-        preview_text.insert(tk.END, f"Median Filter: {median_var.get()} pixels\n")
-        preview_text.insert(tk.END, f"Threshold: {threshold_var.get()}\n\n")
-        preview_text.insert(tk.END, "These settings will be applied to the built-in macro processing.")
-    
-    # Update preview initially and bind to changes
-    update_preview()
-    for var in [size_min_var, size_max_var, circ_min_var, circ_max_var, median_var]:
-        var.trace('w', lambda *args: update_preview())
-    threshold_var.trace('w', lambda *args: update_preview())
-    
-    # Buttons
-    button_frame = ttk.Frame(main_frame)
-    button_frame.pack(fill=tk.X, pady=(15, 0))
-    
-    def reset_defaults():
-        """Reset all settings to defaults."""
-        defaults = {
-            "particle_size_min": 600,
-            "particle_size_max": 5000,
-            "circularity_min": 0.00,
-            "circularity_max": 1.00,
-            "median_radius": 3,
-            "threshold_method": "Otsu"
-        }
-        size_min_var.set(defaults["particle_size_min"])
-        size_max_var.set(defaults["particle_size_max"])
-        circ_min_var.set(defaults["circularity_min"])
-        circ_max_var.set(defaults["circularity_max"])
-        median_var.set(defaults["median_radius"])
-        threshold_var.set(defaults["threshold_method"])
-        update_preview()
-    
-    def save_and_close():
-        """Save settings and close window."""
-        new_settings = {
-            "particle_size_min": size_min_var.get(),
-            "particle_size_max": size_max_var.get(),
-            "circularity_min": circ_min_var.get(),
-            "circularity_max": circ_max_var.get(),
-            "median_radius": median_var.get(),
-            "threshold_method": threshold_var.get()
-        }
-        
-        if save_processing_settings(new_settings):
-            messagebox.showinfo("Success", "Processing settings saved successfully!")
-            settings_window.destroy()
-        else:
-            messagebox.showerror("Error", "Failed to save processing settings.")
-    
-    def cancel():
-        """Close without saving."""
-        settings_window.destroy()
-    
-    ttk.Button(button_frame, text="🔄 Reset to Defaults", command=reset_defaults).pack(side=tk.LEFT, padx=(0, 10))
-    ttk.Button(button_frame, text="❌ Cancel", command=cancel).pack(side=tk.RIGHT, padx=(10, 0))
-    ttk.Button(button_frame, text="✅ Save Settings", command=save_and_close).pack(side=tk.RIGHT)
+    # Bind mousewheel to canvas
+    def _on_mousewheel(event):
+        canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+    canvas.bind("<MouseWheel>", _on_mousewheel)
 
 def create_tooltip(widget, text):
     """Create a tooltip for a widget."""
@@ -341,7 +342,7 @@ def get_config():
         print(f"[ERROR] Failed to get config: {e}")
         sys.exit(1)
 
-def count_multiple_nuclei_with_imagej(image_paths, macro_path, imagej_path, keep_images_open=False):
+def count_multiple_nuclei_with_imagej(image_paths, macro_path, imagej_path, keep_images_open=False, use_watershed=True, disable_macro=False):
     """Count nuclei in multiple images using a single ImageJ session."""
     print(f"[STEP] Running ImageJ once for {len(image_paths)} images")
     
@@ -359,11 +360,8 @@ def count_multiple_nuclei_with_imagej(image_paths, macro_path, imagej_path, keep
     temp_results_path = temp_results.name
     temp_results.close()
     
-    # Get processing settings
-    settings = get_processing_settings()
-    
     # Determine processing steps to use
-    if macro_path and os.path.exists(macro_path):
+    if macro_path and os.path.exists(macro_path) and not disable_macro:
         # Use custom macro - extract processing steps
         try:
             with open(macro_path, 'r') as f:
@@ -377,24 +375,31 @@ def count_multiple_nuclei_with_imagej(image_paths, macro_path, imagej_path, keep
             
         except Exception as e:
             print(f"[WARNING] Could not read custom macro: {e}")
-            print("[INFO] Using built-in processing steps with custom settings")
+            print("[INFO] Using built-in processing steps")
+            # Build watershed step
+            watershed_step = 'run("Watershed");' if use_watershed else '// Watershed disabled'
             processing_steps = f'''run("8-bit");
-run("Median...", "radius={settings['median_radius']}");
-setAutoThreshold("{settings['threshold_method']}");
+run("Median...", "radius=3");
+setAutoThreshold("Otsu");
 run("Convert to Mask");
 run("Invert");
-run("Watershed");
-run("Analyze Particles...", "size={settings['particle_size_min']}-{settings['particle_size_max']} circularity={settings['circularity_min']:.2f}-{settings['circularity_max']:.2f} show=Nothing clear");'''
+{watershed_step}
+run("Analyze Particles...", "size=450-25000 circularity=0.00-1.00 show=Nothing clear");'''
     else:
-        # Use built-in processing steps with custom settings
-        print("[INFO] Using built-in processing steps with custom settings")
+        # Use built-in processing steps with updated particle size range
+        print("[INFO] Using built-in processing steps")
+        if disable_macro:
+            print("[INFO] Custom macro disabled by user setting")
+        
+        # Build watershed step
+        watershed_step = 'run("Watershed");' if use_watershed else '// Watershed disabled'
         processing_steps = f'''run("8-bit");
-run("Median...", "radius={settings['median_radius']}");
-setAutoThreshold("{settings['threshold_method']}");
+run("Median...", "radius=3");
+setAutoThreshold("Otsu");
 run("Convert to Mask");
 run("Invert");
-run("Watershed");
-run("Analyze Particles...", "size={settings['particle_size_min']}-{settings['particle_size_max']} circularity={settings['circularity_min']:.2f}-{settings['circularity_max']:.2f} show=Nothing clear");'''
+{watershed_step}
+run("Analyze Particles...", "size=450-25000 circularity=0.00-1.00 show=Nothing clear");'''
     
     # Create batch macro that processes all images
     batch_mode = "true" if not keep_images_open else "false"
@@ -470,7 +475,8 @@ print("Batch processing complete! {completion_message}");
     try:
         print(f"[INFO] Starting ImageJ batch processing...")
         print(f"[INFO] Keep images open: {keep_images_open}")
-        print(f"[INFO] Processing settings: {settings}")
+        print(f"[INFO] Use watershed: {use_watershed}")
+        print(f"[INFO] Disable macro: {disable_macro}")
         print(f"[INFO] Command: {' '.join(cmd)}")
         
         # Set environment variables
@@ -547,7 +553,7 @@ print("Batch processing complete! {completion_message}");
         except Exception as e:
             print(f"[DEBUG] Error cleaning up temp files: {e}")
 
-def select_and_count(keep_images_open=False):
+def select_and_count(keep_images_open=False, use_watershed=True, disable_macro=False):
     """Select images and count nuclei in each using batch processing."""
     try:
         config = get_config()
@@ -572,7 +578,7 @@ def select_and_count(keep_images_open=False):
         print(f"[INFO] Processing {len(file_paths)} images in batch mode...")
         
         # Process all images in one ImageJ session
-        batch_results = count_multiple_nuclei_with_imagej(file_paths, config["macro_path"], config["imagej_path"], keep_images_open)
+        batch_results = count_multiple_nuclei_with_imagej(file_paths, config["macro_path"], config["imagej_path"], keep_images_open, use_watershed, disable_macro)
         
         # Format results and save to history
         results = []
@@ -679,10 +685,10 @@ def change_macro_settings():
         print(f"[ERROR] Error changing macro settings: {e}")
 
 def create_gui():
-    """Create the main GUI with history display, toggle, processing settings, and tooltips."""
+    """Create the main GUI with simplified controls and protocol help."""
     try:
         root = tk.Tk()
-        root.title("Nuclei Counter v2.0")
+        root.title("Nuclei Counter v3.11")
         root.geometry("700x700")
         root.minsize(600, 600)
         
@@ -695,33 +701,49 @@ def create_gui():
         main_frame.pack(fill=tk.BOTH, expand=True)
         
         # Title
-        title_label = ttk.Label(main_frame, text="🔬 Nuclei Counter", font=("Arial", 16, "bold"))
+        title_label = ttk.Label(main_frame, text="🔬 Nuclei Counter v3.11", font=("Arial", 16, "bold"))
         title_label.pack(pady=(0, 20))
         
-        # Toggle for keeping images open
+        # Processing options variables
         keep_images_var = tk.BooleanVar()
         keep_images_var.set(False)  # Default to closing images
+        
+        use_watershed_var = tk.BooleanVar()
+        use_watershed_var.set(True)  # Default to using watershed
+        
+        disable_macro_var = tk.BooleanVar()
+        disable_macro_var.set(False)  # Default to using macro if available
         
         # Options frame
         options_frame = ttk.LabelFrame(main_frame, text="Processing Options", padding="10")
         options_frame.pack(fill=tk.X, pady=(0, 10))
         
+        # Keep images open option
         keep_images_check = ttk.Checkbutton(
             options_frame, 
             text="🖼️ Keep images open in ImageJ after processing", 
             variable=keep_images_var
         )
-        keep_images_check.pack(anchor='w')
+        keep_images_check.pack(anchor='w', pady=2)
         create_tooltip(keep_images_check, "When enabled, ImageJ will remain open with all processed images for manual inspection and verification.")
         
-        # Info label
-        info_label = ttk.Label(
+        # Watershed option
+        watershed_check = ttk.Checkbutton(
             options_frame, 
-            text="When enabled, ImageJ will remain open with all processed images for inspection.",
-            font=("Arial", 9),
-            foreground="gray"
+            text="🌊 Enable watershed segmentation (separates touching nuclei)", 
+            variable=use_watershed_var
         )
-        info_label.pack(anchor='w', pady=(5, 0))
+        watershed_check.pack(anchor='w', pady=2)
+        create_tooltip(watershed_check, "Watershed helps separate touching or overlapping nuclei. Disable for faster processing if nuclei are well-separated.")
+        
+        # Disable macro option
+        disable_macro_check = ttk.Checkbutton(
+            options_frame, 
+            text="🚫 Disable custom macro (force built-in processing)", 
+            variable=disable_macro_var
+        )
+        disable_macro_check.pack(anchor='w', pady=2)
+        create_tooltip(disable_macro_check, "When enabled, always uses built-in processing even if a custom macro is selected.")
         
         # Button frame
         button_frame = ttk.LabelFrame(main_frame, text="Actions", padding="10")
@@ -793,14 +815,26 @@ def create_gui():
         def count_and_refresh():
             try:
                 keep_open = keep_images_var.get()
-                select_and_count(keep_images_open=keep_open)
+                use_watershed = use_watershed_var.get()
+                disable_macro = disable_macro_var.get()
+                
+                # Save current settings
+                settings = {
+                    "use_watershed": use_watershed,
+                    "disable_macro": disable_macro
+                }
+                save_processing_settings(settings)
+                
+                select_and_count(keep_images_open=keep_open, use_watershed=use_watershed, disable_macro=disable_macro)
                 refresh_history()
                 
-                # Update status based on toggle
+                # Update status based on settings
+                status_text = "Processing complete! "
                 if keep_open:
-                    status_label.config(text="Processing complete! ImageJ remains open with images.")
+                    status_text += "ImageJ remains open with images."
                 else:
-                    status_label.config(text="Processing complete! ImageJ closed after processing.")
+                    status_text += "ImageJ closed after processing."
+                status_label.config(text=status_text)
                     
             except Exception as e:
                 print(f"[ERROR] Error in count_and_refresh: {e}")
@@ -828,10 +862,10 @@ def create_gui():
         btn_macro.pack(side=tk.LEFT, padx=(0, 5))
         create_tooltip(btn_macro, "Select a custom ImageJ macro file or use the built-in processing")
         
-        btn_processing = ttk.Button(settings_frame, text="🎛️ Processing Settings", 
-                                   command=open_processing_settings)
-        btn_processing.pack(side=tk.LEFT)
-        create_tooltip(btn_processing, "Adjust particle size, circularity, and other processing parameters")
+        btn_protocol = ttk.Button(settings_frame, text="📋 Protocol & Help", 
+                                 command=open_protocol_help)
+        btn_protocol.pack(side=tk.LEFT)
+        create_tooltip(btn_protocol, "Open step-by-step protocol and troubleshooting guide")
         
         # History section
         history_frame = ttk.LabelFrame(main_frame, text="Processing History", padding="10")
@@ -888,6 +922,11 @@ def create_gui():
         status_label = ttk.Label(main_frame, text="Ready", relief=tk.SUNKEN, anchor=tk.W)
         status_label.pack(fill=tk.X, pady=(10, 0))
         
+        # Load saved settings
+        settings = get_processing_settings()
+        use_watershed_var.set(settings.get("use_watershed", True))
+        disable_macro_var.set(settings.get("disable_macro", False))
+        
         # Initial history load
         refresh_history()
         
@@ -902,7 +941,7 @@ def create_gui():
         
         history_tree.bind('<Double-1>', on_double_click)
         
-        print("[INFO] Enhanced GUI with processing settings and tooltips loaded. Waiting for user action.")
+        print("[INFO] Nuclei Counter v3.11 with updated protocol loaded. Waiting for user action.")
         root.mainloop()
         
     except Exception as e:
@@ -910,7 +949,7 @@ def create_gui():
         raise
 
 if __name__ == "__main__":
-    print("[INFO] Nuclei Counter v2.0 started.")
+    print("[INFO] Nuclei Counter v3.11 started.")
     
     if len(sys.argv) == 2:
         # Command-line mode - single image
@@ -924,8 +963,8 @@ if __name__ == "__main__":
             
             print(f"[STEP] Running in command-line mode for image: {os.path.basename(image_path)}")
             
-            # Use batch processing for single image (default: close images)
-            batch_results = count_multiple_nuclei_with_imagej([image_path], config["macro_path"], config["imagej_path"], keep_images_open=False)
+            # Use batch processing for single image (default: close images, use watershed, don't disable macro)
+            batch_results = count_multiple_nuclei_with_imagej([image_path], config["macro_path"], config["imagej_path"], keep_images_open=False, use_watershed=True, disable_macro=False)
             filename = os.path.basename(image_path)
             count = batch_results.get(filename)
             

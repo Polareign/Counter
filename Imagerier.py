@@ -50,7 +50,6 @@ def delete_history_entry(filename, timestamp):
     """Delete a specific entry from history."""
     try:
         history = get_history()
-        # Find and remove the entry
         history = [entry for entry in history if not (entry.get("filename") == filename and entry.get("timestamp") == timestamp)]
         
         with open(HISTORY_FILE, "w") as f:
@@ -85,7 +84,6 @@ def get_processing_settings():
         except:
             pass
     
-    # Return defaults
     return {
         "use_watershed": True,
         "disable_macro": False
@@ -115,19 +113,17 @@ def save_processing_settings(settings):
 def open_protocol_help():
     """Open protocol/help window with step-by-step instructions."""
     protocol_window = tk.Toplevel()
-    protocol_window.title("📋 Nuclei Counter Protocol")
+    protocol_window.title("Nuclei Counter Protocol")
     protocol_window.geometry("800x700")
     protocol_window.minsize(700, 600)
-    protocol_window.grab_set()  # Make modal
-    
-    # Center the window
+    protocol_window.grab_set()
+
     protocol_window.transient()
     
-    # Main frame with scrollbar
     main_frame = ttk.Frame(protocol_window)
     main_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
     
-    # Canvas for scrolling
+
     canvas = tk.Canvas(main_frame, bg='white')
     scrollbar = ttk.Scrollbar(main_frame, orient="vertical", command=canvas.yview)
     scrollable_frame = ttk.Frame(canvas)
@@ -140,13 +136,11 @@ def open_protocol_help():
     canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
     canvas.configure(yscrollcommand=scrollbar.set)
     
-    # Title
-    title_label = ttk.Label(scrollable_frame, text="📋 Nuclei Counter Protocol", font=("Arial", 16, "bold"))
+    title_label = ttk.Label(scrollable_frame, text="Nuclei Counter Protocol", font=("Arial", 16, "bold"))
     title_label.pack(pady=(0, 20))
     
-    # Protocol content
     protocol_text = """
-🔬 NUCLEI COUNTER - PROTOCOL
+NUCLEI COUNTER - PROTOCOL
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -162,23 +156,23 @@ def open_protocol_help():
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-🎛️ PROCESSING OPTIONS
+PROCESSING OPTIONS
 
 KEEP IMAGES OPEN
-   ✅ Checked: ImageJ stays open with processed images for inspection
-   ❌ Unchecked: ImageJ closes automatically after processing (faster)
+   Checked: ImageJ stays open with processed images for inspection
+   Unchecked: ImageJ closes automatically after processing (faster)
 
 WATERSHED SEGMENTATION
-   ✅ Enabled: Separates touching nuclei (recommended)
-   ❌ Disabled: Used when nuclei are not bunched together
+   Enabled: Separates touching nuclei (recommended)
+   Disabled: Used when nuclei are not bunched together
 
 MACRO PROCESSING
-   ✅ Enabled: Uses your custom macro file (if selected)
-   ❌ Disabled: Forces built-in processing (overrides custom macro)
+   Enabled: Uses your custom macro file (if selected)
+   Disabled: Forces built-in processing (overrides custom macro)
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-📁 PROCESSING WORKFLOW
+PROCESSING WORKFLOW
 
 1. CLICK "SELECT IMAGES AND COUNT NUCLEI"
    • File dialog opens - select one or more images
@@ -203,7 +197,7 @@ MACRO PROCESSING
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-🔧 TROUBLESHOOTING
+TROUBLESHOOTING
 
 IMAGEJ NOT OPENING
    • Check that ImageJ path is correct
@@ -232,25 +226,21 @@ Version: Nuclei Counter v3.11
 Built-in processing: 8-bit → Median filter → Otsu threshold → Mask → Watershed → Particle analysis (450-25000 pixels)
 """
 
-    # Create text widget with proper formatting
     text_widget = tk.Text(scrollable_frame, wrap=tk.WORD, font=("Consolas", 10), 
                          bg='white', fg='black', padx=20, pady=20)
     text_widget.insert(tk.END, protocol_text)
-    text_widget.configure(state=tk.DISABLED)  # Make read-only
+    text_widget.configure(state=tk.DISABLED)
     text_widget.pack(fill=tk.BOTH, expand=True)
     
-    # Pack canvas and scrollbar
     canvas.pack(side="left", fill="both", expand=True)
     scrollbar.pack(side="right", fill="y")
-    
-    # Close button
+
     close_frame = ttk.Frame(protocol_window)
     close_frame.pack(fill=tk.X, padx=20, pady=10)
     
-    ttk.Button(close_frame, text="✅ Close Protocol", 
+    ttk.Button(close_frame, text="Close Protocol", 
               command=protocol_window.destroy).pack(side=tk.RIGHT)
     
-    # Bind mousewheel to canvas
     def _on_mousewheel(event):
         canvas.yview_scroll(int(-1*(event.delta/120)), "units")
     canvas.bind("<MouseWheel>", _on_mousewheel)
@@ -269,7 +259,7 @@ def create_tooltip(widget, text):
         def hide_tooltip():
             tooltip.destroy()
         
-        tooltip.after(3000, hide_tooltip)  # Hide after 3 seconds
+        tooltip.after(3000, hide_tooltip)
         widget.tooltip = tooltip
     
     def hide_tooltip(event):
@@ -287,7 +277,6 @@ def get_config():
                 config = json.load(f)
             print("[INFO] Loaded existing config file.")
             
-            # Validate config has required keys (imagej_path is required, macro_path is optional)
             if "imagej_path" in config:
                 return config
             else:
@@ -298,13 +287,11 @@ def get_config():
             if os.path.exists(CONFIG_FILE):
                 os.remove(CONFIG_FILE)
     
-    # Create new config
     config = {}
     try:
         root = tk.Tk()
         root.withdraw()
         
-        # Get ImageJ executable - REQUIRED
         print("[STEP] Waiting for user to select ImageJ executable...")
         imagej_path = filedialog.askopenfilename(
             title="Select ImageJ executable (ImageJ-win64.exe)",
@@ -317,7 +304,6 @@ def get_config():
             print("[ERROR] ImageJ executable not selected. Exiting.")
             sys.exit(1)
         
-        # Get macro file - OPTIONAL
         print("[STEP] Waiting for user to select macro file (or Cancel to use built-in macro)...")
         macro_path = filedialog.askopenfilename(
             title="Select Macro file (e.g., Counter.ijm) - Cancel to use built-in macro",
@@ -327,10 +313,9 @@ def get_config():
             config["macro_path"] = macro_path
             print(f"[INFO] Custom macro file selected: {macro_path}")
         else:
-            config["macro_path"] = None  # Use built-in macro
+            config["macro_path"] = None
             print("[INFO] No macro file selected. Will use built-in macro.")
         
-        # Save config
         with open(CONFIG_FILE, "w") as f:
             json.dump(config, f, indent=2)
         print("[INFO] Config file saved.")
@@ -346,7 +331,6 @@ def count_multiple_nuclei_with_imagej(image_paths, macro_path, imagej_path, keep
     """Count nuclei in multiple images using a single ImageJ session."""
     print(f"[STEP] Running ImageJ once for {len(image_paths)} images")
     
-    # Validate inputs
     if not image_paths:
         print("[ERROR] No image paths provided")
         return {}
@@ -355,20 +339,16 @@ def count_multiple_nuclei_with_imagej(image_paths, macro_path, imagej_path, keep
         print(f"[ERROR] ImageJ executable not found: {imagej_path}")
         return {}
     
-    # Create a temporary results file to capture all counts
     temp_results = tempfile.NamedTemporaryFile(mode='w+', delete=False, suffix='.csv')
     temp_results_path = temp_results.name
     temp_results.close()
-    
-    # Determine processing steps to use
+
     if macro_path and os.path.exists(macro_path) and not disable_macro:
-        # Use custom macro - extract processing steps
         try:
             with open(macro_path, 'r') as f:
                 custom_macro = f.read()
             print(f"[INFO] Using custom macro processing from: {macro_path}")
             
-            # Extract processing steps (remove open() and print() statements)
             processing_steps = custom_macro.replace('open(getArgument());', '')
             processing_steps = processing_steps.replace('print("Count: " + count);', '')
             processing_steps = processing_steps.strip()
@@ -376,7 +356,6 @@ def count_multiple_nuclei_with_imagej(image_paths, macro_path, imagej_path, keep
         except Exception as e:
             print(f"[WARNING] Could not read custom macro: {e}")
             print("[INFO] Using built-in processing steps")
-            # Build watershed step
             watershed_step = 'run("Watershed");' if use_watershed else '// Watershed disabled'
             processing_steps = f'''run("8-bit");
 run("Median...", "radius=3");
@@ -386,12 +365,10 @@ run("Invert");
 {watershed_step}
 run("Analyze Particles...", "size=450-25000 circularity=0.00-1.00 show=Nothing clear");'''
     else:
-        # Use built-in processing steps with updated particle size range
         print("[INFO] Using built-in processing steps")
         if disable_macro:
             print("[INFO] Custom macro disabled by user setting")
         
-        # Build watershed step
         watershed_step = 'run("Watershed");' if use_watershed else '// Watershed disabled'
         processing_steps = f'''run("8-bit");
 run("Median...", "radius=3");
@@ -401,7 +378,6 @@ run("Invert");
 {watershed_step}
 run("Analyze Particles...", "size=450-25000 circularity=0.00-1.00 show=Nothing clear");'''
     
-    # Create batch macro that processes all images
     batch_mode = "true" if not keep_images_open else "false"
     close_images = "run(\"Close All\");" if not keep_images_open else "// Images kept open for inspection"
     quit_imagej = "run(\"Quit\");" if not keep_images_open else "// ImageJ kept open for inspection"
@@ -420,7 +396,6 @@ print("Starting batch processing of {len(image_paths)} images...");
 
 '''
     
-    # Add processing code for each image
     for i, image_path in enumerate(image_paths):
         safe_image_path = image_path.replace(chr(92), '/').replace('"', '\\"')
         filename = os.path.basename(image_path)
@@ -455,21 +430,17 @@ if (File.exists("{safe_image_path}")) {{
 
 '''
     
-    # Add macro ending
     completion_message = "Images kept open for inspection!" if keep_images_open else "Processing complete!"
     batch_macro_content += f'''
 setBatchMode(false);
 print("Batch processing complete! {completion_message}");
 {quit_imagej}
 '''
-    
-    # Write the batch macro to a temporary file
     temp_macro = tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.ijm')
     temp_macro.write(batch_macro_content)
     temp_macro.close()
     temp_macro_path = temp_macro.name
     
-    # Command to run ImageJ once with the batch macro
     cmd = [imagej_path, "-macro", temp_macro_path]
     
     try:
@@ -479,11 +450,9 @@ print("Batch processing complete! {completion_message}");
         print(f"[INFO] Disable macro: {disable_macro}")
         print(f"[INFO] Command: {' '.join(cmd)}")
         
-        # Set environment variables
         env = os.environ.copy()
         env['JAVA_OPTS'] = '-Djava.awt.headless=false'
         
-        # Start ImageJ process
         process = subprocess.Popen(
             cmd, 
             stdout=subprocess.PIPE,
@@ -492,9 +461,8 @@ print("Batch processing complete! {completion_message}");
             env=env
         )
         
-        # Wait for ImageJ to process all images and close
         try:
-            stdout, stderr = process.communicate(timeout=300)  # 5 minutes timeout
+            stdout, stderr = process.communicate(timeout=300)
             return_code = process.returncode
         except subprocess.TimeoutExpired:
             print(f"[WARNING] ImageJ batch processing timed out after 5 minutes")
@@ -577,10 +545,8 @@ def select_and_count(keep_images_open=False, use_watershed=True, disable_macro=F
         
         print(f"[INFO] Processing {len(file_paths)} images in batch mode...")
         
-        # Process all images in one ImageJ session
         batch_results = count_multiple_nuclei_with_imagej(file_paths, config["macro_path"], config["imagej_path"], keep_images_open, use_watershed, disable_macro)
         
-        # Format results and save to history
         results = []
         successful_counts = 0
         
@@ -610,7 +576,6 @@ def select_and_count(keep_images_open=False, use_watershed=True, disable_macro=F
 def change_imagej_settings():
     """Change only the ImageJ executable setting."""
     try:
-        # Load existing config or create empty one
         config = {}
         if os.path.exists(CONFIG_FILE):
             try:
@@ -721,7 +686,7 @@ def create_gui():
         # Keep images open option
         keep_images_check = ttk.Checkbutton(
             options_frame, 
-            text="🖼️ Keep images open in ImageJ after processing", 
+            text="Keep images open in ImageJ after processing", 
             variable=keep_images_var
         )
         keep_images_check.pack(anchor='w', pady=2)
@@ -730,7 +695,7 @@ def create_gui():
         # Watershed option
         watershed_check = ttk.Checkbutton(
             options_frame, 
-            text="🌊 Enable watershed segmentation (separates touching nuclei)", 
+            text="Enable watershed segmentation (separates touching nuclei)", 
             variable=use_watershed_var
         )
         watershed_check.pack(anchor='w', pady=2)
@@ -739,17 +704,15 @@ def create_gui():
         # Disable macro option
         disable_macro_check = ttk.Checkbutton(
             options_frame, 
-            text="🚫 Disable custom macro (force built-in processing)", 
+            text="Disable custom macro (force built-in processing)", 
             variable=disable_macro_var
         )
         disable_macro_check.pack(anchor='w', pady=2)
         create_tooltip(disable_macro_check, "When enabled, always uses built-in processing even if a custom macro is selected.")
         
-        # Button frame
         button_frame = ttk.LabelFrame(main_frame, text="Actions", padding="10")
         button_frame.pack(fill=tk.X, pady=(0, 15))
         
-        # History tree reference for refresh function
         history_tree = None
         status_label = None
         
@@ -758,11 +721,9 @@ def create_gui():
             if history_tree is None:
                 return
             try:
-                # Clear existing items
                 for item in history_tree.get_children():
                     history_tree.delete(item)
                 
-                # Load and display history
                 history = get_history()
                 for i, entry in enumerate(reversed(history)):  # Show newest first
                     tag = 'evenrow' if i % 2 == 0 else 'oddrow'
@@ -772,7 +733,6 @@ def create_gui():
                         entry.get("timestamp", "Unknown")
                     ), tags=(tag,))
                 
-                # Update status
                 if status_label:
                     status_label.config(text=f"History: {len(history)} entries")
                 
@@ -794,7 +754,6 @@ def create_gui():
             filename = values[0]
             timestamp = values[2]
             
-            # Confirm deletion
             if messagebox.askyesno("Confirm Delete", f"Delete entry for '{filename}' from {timestamp}?"):
                 if delete_history_entry(filename, timestamp):
                     refresh_history()
@@ -811,14 +770,12 @@ def create_gui():
                 else:
                     messagebox.showerror("Error", "Failed to clear history.")
         
-        # Main action buttons
         def count_and_refresh():
             try:
                 keep_open = keep_images_var.get()
                 use_watershed = use_watershed_var.get()
                 disable_macro = disable_macro_var.get()
                 
-                # Save current settings
                 settings = {
                     "use_watershed": use_watershed,
                     "disable_macro": disable_macro
@@ -828,7 +785,6 @@ def create_gui():
                 select_and_count(keep_images_open=keep_open, use_watershed=use_watershed, disable_macro=disable_macro)
                 refresh_history()
                 
-                # Update status based on settings
                 status_text = "Processing complete! "
                 if keep_open:
                     status_text += "ImageJ remains open with images."
@@ -842,75 +798,67 @@ def create_gui():
                 if status_label:
                     status_label.config(text="Error during processing.")
         
-        # Main processing button (larger and prominent)
-        btn_count = ttk.Button(button_frame, text="📁 Select Images and Count Nuclei", 
+        btn_count = ttk.Button(button_frame, text="Select Images and Count Nuclei", 
                               command=count_and_refresh)
         btn_count.pack(fill=tk.X, pady=(0, 10))
         create_tooltip(btn_count, "Click to select one or more images and automatically count nuclei in each image using ImageJ.")
         
-        # Settings buttons frame
         settings_frame = ttk.Frame(button_frame)
         settings_frame.pack(fill=tk.X, pady=(0, 5))
         
-        btn_imagej = ttk.Button(settings_frame, text="⚙️ Change ImageJ Path", 
+        btn_imagej = ttk.Button(settings_frame, text="Change ImageJ Path", 
                                command=change_imagej_settings)
         btn_imagej.pack(side=tk.LEFT, padx=(0, 5))
         create_tooltip(btn_imagej, "Change the path to your ImageJ executable (ImageJ-win64.exe)")
         
-        btn_macro = ttk.Button(settings_frame, text="🔧 Change Macro Settings", 
+        btn_macro = ttk.Button(settings_frame, text="Change Macro Settings", 
                               command=change_macro_settings)
         btn_macro.pack(side=tk.LEFT, padx=(0, 5))
         create_tooltip(btn_macro, "Select a custom ImageJ macro file or use the built-in processing")
         
-        btn_protocol = ttk.Button(settings_frame, text="📋 Protocol & Help", 
+        btn_protocol = ttk.Button(settings_frame, text="Protocol & Help", 
                                  command=open_protocol_help)
         btn_protocol.pack(side=tk.LEFT)
         create_tooltip(btn_protocol, "Open step-by-step protocol and troubleshooting guide")
         
-        # History section
         history_frame = ttk.LabelFrame(main_frame, text="Processing History", padding="10")
         history_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
         
-        # History controls
         history_controls = ttk.Frame(history_frame)
         history_controls.pack(fill=tk.X, pady=(0, 10))
         
-        btn_delete = ttk.Button(history_controls, text="🗑️ Delete Selected", 
+        btn_delete = ttk.Button(history_controls, text="Delete Selected", 
                                command=delete_selected_entry)
         btn_delete.pack(side=tk.LEFT, padx=(0, 10))
         create_tooltip(btn_delete, "Delete the selected history entry permanently")
         
-        btn_clear_all = ttk.Button(history_controls, text="🧹 Clear All History", 
+        btn_clear_all = ttk.Button(history_controls, text="Clear All History", 
                                   command=clear_all_entries)
         btn_clear_all.pack(side=tk.LEFT, padx=(0, 10))
         create_tooltip(btn_clear_all, "Clear all history entries (cannot be undone)")
         
-        btn_refresh = ttk.Button(history_controls, text="🔄 Refresh", 
+        btn_refresh = ttk.Button(history_controls, text="Refresh", 
                                 command=refresh_history)
         btn_refresh.pack(side=tk.LEFT)
         create_tooltip(btn_refresh, "Refresh the history display")
         
-        # Treeview for history
         tree_frame = ttk.Frame(history_frame)
         tree_frame.pack(fill=tk.BOTH, expand=True)
         
         columns = ("File", "Count", "Timestamp")
         history_tree = ttk.Treeview(tree_frame, columns=columns, show="headings")
         
-        # Configure columns
-        history_tree.heading("File", text="📄 File Name")
-        history_tree.heading("Count", text="🔢 Count")
-        history_tree.heading("Timestamp", text="📅 Date/Time")
+        history_tree.heading("File", text="File Name")
+        history_tree.heading("Count", text="Count")
+        history_tree.heading("Timestamp", text="Date/Time")
         
         history_tree.column("File", width=300)
         history_tree.column("Count", width=100)
         history_tree.column("Timestamp", width=200)
         
-        # Add alternating row colors
         history_tree.tag_configure('oddrow', background='#f0f0f0')
         history_tree.tag_configure('evenrow', background='white')
         
-        # Scrollbar for history
         scrollbar = ttk.Scrollbar(tree_frame, orient=tk.VERTICAL, command=history_tree.yview)
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
         history_tree.configure(yscrollcommand=scrollbar.set)
@@ -918,19 +866,15 @@ def create_gui():
         
         create_tooltip(history_tree, "Double-click an entry to view details, or select and use buttons above to delete")
         
-        # Status bar
         status_label = ttk.Label(main_frame, text="Ready", relief=tk.SUNKEN, anchor=tk.W)
         status_label.pack(fill=tk.X, pady=(10, 0))
         
-        # Load saved settings
         settings = get_processing_settings()
         use_watershed_var.set(settings.get("use_watershed", True))
         disable_macro_var.set(settings.get("disable_macro", False))
         
-        # Initial history load
         refresh_history()
         
-        # Bind double-click to show details
         def on_double_click(event):
             selection = history_tree.selection()
             if selection:
@@ -952,7 +896,6 @@ if __name__ == "__main__":
     print("[INFO] Nuclei Counter v3.11 started.")
     
     if len(sys.argv) == 2:
-        # Command-line mode - single image
         try:
             config = get_config()
             image_path = sys.argv[1]
@@ -963,13 +906,11 @@ if __name__ == "__main__":
             
             print(f"[STEP] Running in command-line mode for image: {os.path.basename(image_path)}")
             
-            # Use batch processing for single image (default: close images, use watershed, don't disable macro)
             batch_results = count_multiple_nuclei_with_imagej([image_path], config["macro_path"], config["imagej_path"], keep_images_open=False, use_watershed=True, disable_macro=False)
             filename = os.path.basename(image_path)
             count = batch_results.get(filename)
             
             if count is not None:
-                # Save to history
                 save_to_history(filename, count)
                 print(f"[SUCCESS] Nuclei count: {count}")
             else:
@@ -980,7 +921,6 @@ if __name__ == "__main__":
             print(f"[ERROR] Command-line mode failed: {e}")
             sys.exit(1)
     else:
-        # GUI mode
         try:
             create_gui()
         except Exception as e:

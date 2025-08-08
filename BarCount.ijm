@@ -12,12 +12,15 @@ width = getWidth();
 height = getHeight();
 
 run("Split Channels");
-greenTitle = "working (green)";
-selectWindow(greenTitle);
+selectWindow("working (green)");
 run("Duplicate...", "title=green_lines");
-setThreshold(100, 255);
+run("Auto Threshold", "method=Default");
 run("Make Binary");
 run("Invert");
+
+if (isOpen("working (red)")) close("working (red)");
+if (isOpen("working (green)")) close("working (green)");
+if (isOpen("working (blue)")) close("working (blue)");
 
 selectImage(original);
 run("Duplicate...", "title=with_black_lines");
@@ -42,23 +45,27 @@ for (i = 1; i <= vertical_lines; i++) {
 }
 
 run("Duplicate...", "title=with_black_lines_mask");
-selectWindow("with_black_lines_mask");
 run("Split Channels");
 selectWindow("with_black_lines_mask (green)");
 run("Duplicate...", "title=black_lines");
 setThreshold(0, 50);
 run("Make Binary");
 
+if (isOpen("with_black_lines_mask (red)")) close("with_black_lines_mask (red)");
+if (isOpen("with_black_lines_mask (green)")) close("with_black_lines_mask (green)");
+if (isOpen("with_black_lines_mask (blue)")) close("with_black_lines_mask (blue)");
+if (isOpen("with_black_lines_mask")) close("with_black_lines_mask");
 imageCalculator("AND create", "green_lines", "black_lines");
 rename("intersections");
-
 run("Median...", "radius=1");
 run("Analyze Particles...", "size=5-500 circularity=0.00-1.00 show=Nothing clear");
 intersection_count = nResults;
-
 ppi = 96;
 pixels_per_foot = ppi * 12;
 line_length_px = (horizontal_lines * width) + (vertical_lines * height);
 line_length_ft = line_length_px / pixels_per_foot;
-
 print("Count: " + intersection_count / line_length_ft + " count/ft");
+if (isOpen("working")) close("working");
+if (isOpen("with_black_lines")) close("with_black_lines");
+if (isOpen("black_lines")) close("black_lines");
+if (isOpen("intersections")) close("intersections");
